@@ -25,21 +25,19 @@ library(ape)          # árboles (nj)
 library(seqinr)       # write.fasta, dist.alignment helpers
 library(ggplot2)
 
-# ---- UI ----
+#############################################################################
+#############             Interfaz de usuario básica            #############
+#############################################################################
+
+
 ui <- fluidPage(
-  titlePanel("MSA + Árbol filogenético (msa + ape)"),
+  titlePanel("Análisis bioinformático"),
   sidebarLayout(
     sidebarPanel(
-      fileInput("fastaFile", "Sube archivo FASTA (.fasta, .fa, .fna)",
+      fileInput("archivo", "Sube archivo FASTA (.fasta, .fa, .fna)",
                 accept = c(".fa", ".fasta", ".fna")),
-      selectInput("method", "Algoritmo MSA:",
-                  choices = c("ClustalW", "ClustalOmega", "Muscle"),
-                  selected = "ClustalW"),
-      actionButton("runMSA", "Ejecutar MSA"),
       hr(),
-      checkboxInput("showConsensus", "Mostrar consenso al imprimir MSA", value = TRUE),
-      hr(),
-      downloadButton("downloadAlignedFasta", "Descargar MSA (FASTA)")
+      checkboxInput("showConsensus", "Mostrar consenso al imprimir MSA", value = TRUE)
     ),
     mainPanel(
       tabsetPanel(
@@ -47,9 +45,24 @@ ui <- fluidPage(
                  verbatimTextOutput("tipoDetected"),
                  tableOutput("seqSummary")
         ),
+        
+        # -------------------- MSA ---------------------
         tabPanel("MSA (texto)",
+                 
+                 # Controles movidos desde el sidebar:
+                 selectInput("method", "Algoritmo MSA:",
+                             choices = c("ClustalW", "ClustalOmega", "Muscle"),
+                             selected = "ClustalW"),
+                 
+                 actionButton("runMSA", "Ejecutar MSA"),
+                 
+                 downloadButton("downloadAlignedFasta", "Descargar MSA (FASTA)"),
+                 
+                 hr(),
                  verbatimTextOutput("msaText")
         ),
+        
+        # ------------------------------------------------
         tabPanel("Matriz de distancias",
                  tableOutput("distMatrix")
         ),
@@ -61,12 +74,14 @@ ui <- fluidPage(
   )
 )
 
+
+
 server <- function(input, output, session) {
   
   # Reactive: leer secuencias con Biostrings (intenta DNA, si detecta U -> RNA)
   seqs <- reactive({
-    req(input$fastaFile)
-    path <- input$fastaFile$datapath
+    req(input$archivo)
+    path <- input$archivo$datapath
     
     # Intentar leer como DNA; si detecta 'U' y no 'T' convertimos a RNA
     tryDNA <- try(readDNAStringSet(path), silent = TRUE)
