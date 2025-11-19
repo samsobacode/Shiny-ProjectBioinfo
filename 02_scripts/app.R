@@ -7,6 +7,7 @@ BiocManager::install(version = "3.22")
 
 BiocManager::install(c("GenomeInfoDb", "Rhtslib"), force = TRUE)
 BiocManager::install("Biostrings", force = TRUE)
+BiocManager::install("ShortRead", force = TRUE)
 BiocManager::install("msa", force = TRUE)
 BiocManager::install("ggmsa", force = TRUE)
 
@@ -24,6 +25,7 @@ library(ggmsa)        # visualización con ggplot2
 library(ape)          # árboles (nj)
 library(seqinr)       # write.fasta, dist.alignment helpers
 library(ggplot2)
+library(ShortRead)
 
 #############################################################################
 #############             Interfaz de usuario básica            #############
@@ -120,6 +122,43 @@ server <- function(input, output, session) {
     df
   })
 
+#############################################################################################################
+#############             Secuencias Fq a fasta, gmsa, árbol, función de integración            #############
+#############################################################################################################
+
+  library("ShortRead")
+  setwd ("C:/Users/crism/Documents/proyecto final robert/prueba/R2")
+  
+  # Cargar fastq
+  fq1 <- readFastq("V350134218_L04_93_1.fq.gz")
+  fq2 <- readFastq("V350134218_L04_93_2.fq.gz")
+  
+  # Extraer secuencias
+  seqs1 <- sread(fq1)
+  seqs2 <- sread(fq2)
+  
+  # Guardar como fasta (solo un ejemplo)
+  writeXStringSet(seqs1, "secuencias_1.fasta")
+  writeXStringSet(seqs2, "secuencias_2.fasta")
+  
+  library(msa)
+  
+  mis_secuencias <- readDNAStringSet("secuencias_2.fasta")
+  alineamiento <- msa(mis_secuencias, method="Muscle")
+  alineamiento
+  
+  library(ape)
+  
+  alineamiento_ape <- msaConvert(alineamiento, type="ape::DNAbin")
+  
+  distancias <- dist.dna(alineamiento_ape, model="raw")
+  arbol <- nj(distancias)   # Neighbor Joining
+  plot(arbol, cex=0.7)
+  
+  # FUNCIÓN GENERAL: analiza_sec_y_actualiza_arbol()
+  library(Biostrings)
+  
+
 --------------------------------------------------------------------------------
 #                                          MSA
 --------------------------------------------------------------------------------
@@ -141,7 +180,10 @@ server <- function(input, output, session) {
 # Link: https://shiny.posit.co/r/reference/shiny/1.0.1/withprogress.html
 #
     withProgress(message = paste("Ejecutando MSA con", method, "..."), value = 0, {
+# 
 # Aumentas el progreso al 10%.
+# Link: https://rstudio-pubs-static.s3.amazonaws.com/28353_bf4353b1c63f40f08082d4f91009edef.html
+#
             incProgress(0.1)
 # 
 # El objeto es un reactive() que contiene las secuencias FASTA.
@@ -149,23 +191,40 @@ server <- function(input, output, session) {
 # Link: https://rdrr.io/bioc/Biostrings/man/XStringSet-io.html
 #
       s <- seqs()
-#    
+#
+# Alineamiento de secuencias múltiple mediatne el método ClustalW,
+# ClustalOmega y MUSCLE, con el paquete msa.
+# El if ayuda para elegir el tipo de alineamiento a ecoger y
+# tryCatch evita errores en Shiny.
+#
+# Link: https://stackoverflow.com/questions/30038676/r-trycatch-in-place-with-err-and-warn-handlers-but-shiny-still-crashes   
+#
       # tryCatch para manejar errores si faltan ejecutables externos
       alignment <- tryCatch({
         if(method == "ClustalW"){
-          msa(s, method = "ClustalW")        # usa ClustalW (si está disponible)
+          msa(s, method = "ClustalW")        
         } else if(method == "ClustalOmega"){
-          msa(s, method = "ClustalOmega")    # Clustal Omega
+          msa(s, method = "ClustalOmega")    
         } else {
-          msa(s, method = "Muscle")          # MUSCLE
+          msa(s, method = "Muscle")          
         }
       }, error = function(e){
+#
+# El showNotification() muestra NULL, si hay un error.
+# Link: https://shiny.posit.co/r/reference/shiny/0.14/shownotification.html
+#  
         showNotification(paste("Error en msa():", e$message), type = "error")
         return(NULL)
       })
-      
+# 
+# Aumentas el progreso al 10%.
+# Link: https://rstudio-pubs-static.s3.amazonaws.com/28353_bf4353b1c63f40f08082d4f91009edef.html
+#
       incProgress(0.6)
-      
+#
+# El if ayuda para retornar, si no hay alineamiento. Ayuda de ChatGTP,
+# porque sali problemas de error.
+#
       if(is.null(alignment)) return()
       
       rv$alignment <- alignment
@@ -255,42 +314,8 @@ server <- function(input, output, session) {
 shinyApp(ui, server)
 
 
-#############################################################################################################################
-#############             Secuencias Fq A fasta, gmsa, arbol, funcion de integracion            #############
-#############################################################################################################################
 
-BiocManager::install("ShortRead")
-library("ShortRead")
-setwd ("C:/Users/crism/Documents/proyecto final robert/prueba/R2")
 
-# Cargar fastq
-fq1 <- readFastq("V350134218_L04_93_1.fq.gz")
-fq2 <- readFastq("V350134218_L04_93_2.fq.gz")
-
-# Extraer secuencias
-seqs1 <- sread(fq1)
-seqs2 <- sread(fq2)
-
-# Guardar como fasta (solo un ejemplo)
-writeXStringSet(seqs1, "secuencias_1.fasta")
-writeXStringSet(seqs2, "secuencias_2.fasta")
-
-library(msa)
-
-mis_secuencias <- readDNAStringSet("secuencias_2.fasta")
-alineamiento <- msa(mis_secuencias, method="Muscle")
-alineamiento
-
-library(ape)
-
-alineamiento_ape <- msaConvert(alineamiento, type="ape::DNAbin")
-
-distancias <- dist.dna(alineamiento_ape, model="raw")
-arbol <- nj(distancias)   # Neighbor Joining
-plot(arbol, cex=0.7)
-
-# FUNCIÓN GENERAL: analiza_sec_y_actualiza_arbol()
-library(Biostrings)
 
 
 
