@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "Análisis filogenético sin Shiny"
 output: html_document
 ---
 library(Biostrings)   # Para manipulación de secuencias biológicas en este casos los Fasta Aspergillus 
