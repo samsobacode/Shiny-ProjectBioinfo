@@ -1,6 +1,6 @@
 # Shiny-ProjectBioinfo
 
-Laura Cristina
+Laura Cristina Cruz Mendiola 
 Elaboración del script: Análisis con biostrings, msa, ape, ggmsa.
 
 Samuel Solís Barrón
