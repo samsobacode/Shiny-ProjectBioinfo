@@ -163,7 +163,12 @@ server <- function(input, output, session) {
 #                                          MSA
 --------------------------------------------------------------------------------
   
-  # ReactiveValues para guardar alignment y objetos derivados
+# 
+# Bloques de construcción reactivos, permite almacenar valores que cambian
+# con el tiempo y puede se usado por distintos módulos
+# Link: https://mastering-shiny.org/reactivity-objects.html
+# Esto guardar alignment y objetos derivados
+#
   rv <- reactiveValues(alignment = NULL, aln_seqinr = NULL, distmat = NULL, tree = NULL)
   
   observeEvent(input$runMSA, {
@@ -199,7 +204,6 @@ server <- function(input, output, session) {
 #
 # Link: https://stackoverflow.com/questions/30038676/r-trycatch-in-place-with-err-and-warn-handlers-but-shiny-still-crashes   
 #
-      # tryCatch para manejar errores si faltan ejecutables externos
       alignment <- tryCatch({
         if(method == "ClustalW"){
           msa(s, method = "ClustalW")        
@@ -226,22 +230,36 @@ server <- function(input, output, session) {
 # porque sali problemas de error.
 #
       if(is.null(alignment)) return()
-      
+#
+# El bloques de construcción reactivo generadoo anteriormente
+#     
       rv$alignment <- alignment
-      
-      # Convertir a objeto seqinr::alignment para distancia y escritura fasta
+#
+# El formato msa convierte a formato seqnir para análisis de distancias.
+#
       aln_seqinr <- tryCatch({
         msaConvert(alignment, type = "seqinr::alignment")
       }, error = function(e){
         showNotification(paste("Error en msaConvert():", e$message), type = "error")
         return(NULL)
       })
-      
+#
+# Bloque de construcción reactivo  generado anteriormente para la 
+# instrucción de análisis de distancias,
+#
       rv$aln_seqinr <- aln_seqinr
-      
+#
+# Aumentas el progreso al 10%.
+# Link: https://rstudio-pubs-static.s3.amazonaws.com/28353_bf4353b1c63f40f08082d4f91009edef.html
+#
       incProgress(0.85)
-      
-      # Calcular matriz de distancias (identity -> proporción de diferencias)
+#    
+# Calcular matriz de distancias
+# aln_seqnir es el msa convertido para el análisis de alineamiento
+# dist.aligment (), calcula las distancias evolutivas entre las 
+#     secuencias alineadas
+# identity, proporción de posiciones diferentes
+#
       if(!is.null(aln_seqinr)){
         d <- tryCatch({
           dist.alignment(aln_seqinr, "identity")
@@ -250,6 +268,9 @@ server <- function(input, output, session) {
           return(NULL)
         })
         rv$distmat <- as.matrix(d)
+#
+#
+#
         # Construir árbol NJ
         if(!is.null(d)){
           rv$tree <- tryCatch({
