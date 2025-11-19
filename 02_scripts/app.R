@@ -144,10 +144,12 @@ server <- function(input, output, session) {
 # Aumentas el progreso al 10%.
             incProgress(0.1)
 # 
-# El objeto es un reactive() que lee las secuencias FASTA.
+# El objeto es un reactive() que contiene las secuencias FASTA.
+#      
+# Link: https://rdrr.io/bioc/Biostrings/man/XStringSet-io.html
 #
       s <- seqs()
-      
+#    
       # tryCatch para manejar errores si faltan ejecutables externos
       alignment <- tryCatch({
         if(method == "ClustalW"){
