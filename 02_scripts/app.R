@@ -285,7 +285,6 @@ library(Biostrings)   # Para manipulación de secuencias biológicas
 library(msa)          # Para alineamiento múltiple (MUSCLE)
 library(ape)          # Para análisis filogenético y construcción de árboles
 library(ggmsa)        # Para visualización del alineamiento
-setwd ("C:/Users/crism/Documents/proyecto final robert/prueba")
 
 # Leer múltiples archivos FASTA de secuencias ITS y combinarlos
 # (Ajustar el patrón o lista de archivos según su directorio de trabajo)
