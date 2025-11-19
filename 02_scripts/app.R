@@ -302,33 +302,36 @@ shinyApp(ui, server)
 #############             Interfaz de usuario básica            #############
 #############################################################################
 
-library(Biostrings)   # Para manipulación de secuencias biológicas
+library(Biostrings)   # Para manipulación de secuencias biológicas en este casos los Fasta Aspergillus 
 library(msa)          # Para alineamiento múltiple (MUSCLE)
 library(ape)          # Para análisis filogenético y construcción de árboles
 library(ggmsa)        # Para visualización del alineamiento
-
-# Leer múltiples archivos FASTA de secuencias ITS y combinarlos
-# (Ajustar el patrón o lista de archivos según su directorio de trabajo)
-archivos <- list.files(pattern = "^sequence.*\\.fasta$")
-secuencias_lista <- lapply(archivos, readDNAStringSet)
-todas_secuencias <- do.call(c, secuencias_lista)
-# Asignar nombres basados en el nombre de archivo (sin extensión)
+#se descargarons archivos FASTA de regiones ITS Aspergillus hubkae, Aspergillus dhakepphalkarii, Aspergillus alvaroi, 
+# Aspergillus doliiformis, Aspergillus Cylundricus, Aspergillus pseudoalabamensis, Aspergillus marneyi que es la secuencia nueva a probar
+# Leer múltiples archivos FASTA de secuencias ITS  que son los fragments que se utilizan para la identificacion o clasificacion de hongos y combinarlos
+archivos <- list.files(pattern = "^sequence.*\\.fasta$") # Busque todos los archivos que encuentre con terminacion fasta
+secuencias_lista <- lapply(archivos, readDNAStringSet) # leer los archivos y juntarlos en una sola
+todas_secuencias <- do.call(c, secuencias_lista) # que te de las secuencias como cada una individual
+# Asignar nombres basados en el nombre de archivo que se tenia como tal al descargarlos
 names(todas_secuencias) <- sub("\\.fasta$", "", archivos)
 
 # Alinear las secuencias combinadas usando MUSCLE
 alineamiento <- msa(todas_secuencias, method = "Muscle")
-# Convertir el alineamiento a formato compatible con ape (seqinr)
-aline_seqinr <- msaConvert(alineamiento, type = "seqinr::alignment")
+# se ven todas las secuencias se alinea con respecto a las reciones consevadas y mutaciones, asi como las deleciones o inserciones
+# Como se tiene ya un alineamiento se pasa a convertir  a formato compatible con ape (seqinr)
+aline_seqinr <- msaConvert(alineamiento, type = "seqinr::alignment") 
 aline_dnabin <- as.DNAbin(aline_seqinr)
+# se convierte a DNAbin que es el compatible con ape
 
-
-# Construir árbol filogenético (vecino más cercano - NJ) usando distancia genética (modelo K80)
+# Construir árbol filogenético usando distancia genética (modelo K80)
 distancias <- dist.dna(aline_dnabin, model = "K80")
+# calcula la matriz de distancias geneticas de todas las secuencias alineadas, por modelo kimura uno de los mas usados en hongos 
 arbol_filogenetico <- nj(distancias)
+# metodo neighor-Joining  agrupa por distnacia genetica mas baja 
 # Opcional: graficar el árbol filogenético
 plot(arbol_filogenetico, main = "Árbol filogenético de Aspergillus (ITS)")
 
-# Función para agregar una nueva secuencia y actualizar el análisis
+# Función para agregar una nueva secuencia y actualizar el análisis que ya se tiene con las secuencias conocidas
 analizar_nueva_secuencia <- function(nueva_secuencia) {
   # Convertir la nueva secuencia a DNAStringSet y asignarle un nombre
   nueva_set <- DNAStringSet(nueva_secuencia)
@@ -349,11 +352,12 @@ analizar_nueva_secuencia <- function(nueva_secuencia) {
   plot(arbol2, main = "Árbol filogenético actualizado")
   
   # Evaluar relación filogenética: encontrar la especie más cercana en el árbol
-  dmat <- cophenetic.phylo(arbol2)
+  dmat <- cophenetic.phylo(arbol2) #distancia cophenética entre cada una de ellas ademas longitud
   nombre_nueva <- names(secuencias_actualizadas)[length(secuencias_actualizadas)]
   otros_nombres <- names(secuencias_actualizadas)[-length(secuencias_actualizadas)]
   cercano <- otros_nombres[which.min(dmat[nombre_nueva, otros_nombres])]
   cat("La secuencia nueva es filogenéticamente más cercana a:", cercano, "\n")
+  # que si esta es cercana a alguna de las que tenemos se ponga a cual 
   
   # Calcular contenido GC y conteo de cada nucleótido de la nueva secuencia
   frec <- alphabetFrequency(DNAString(nueva_secuencia), baseOnly = TRUE)
@@ -363,20 +367,24 @@ analizar_nueva_secuencia <- function(nueva_secuencia) {
   cat("Contenido GC (%):", contenido_gc, "\n")
   cat("Conteo nucleótidos (A, C, G, T):", frec["A"], frec["C"], frec["G"], frec["T"], "\n")
   
-  # Visualizar -las primeras 100 posiciones alineadas usando ggmsa
-  # Convertir el alineamiento actualizado a un objeto DNAStringSet para exportar
+  # Visualizar las primeras 100 posiciones alineadas usando ggmsa
+  # Ver la alineacion ggmsa con el alineamiento ya actualizado
   aline2_set <- as(aline2, "DNAStringSet")
   writeXStringSet(aline2_set, file = "alineamiento_actualizado.fasta")
   print(ggmsa("alineamiento_actualizado.fasta", start = 1, end = 100, color = "Chemistry_NT"))
 }
 
-# Ejemplo de uso de la función:
-# nueva_seq <- "ATGCGTAACGTAGCTAGCTAGCTAGCATCGATCG..."
-# analizar_nueva_secuencia(nueva_seq)
+# Ejemplo de uso de la función esta vez con una secuencia de marneyi
+
 Nueva1 <- "AACGACCCCCCAGAGCCGGAAAGTTGGTCAAACCCGGTCATTTAGAGGAAGTAAAAGTCGTAACAAGGTTTCCGTAGGTGAACCTGCGGAAGGATCATTACCGAGTGCGGGTCTTTATGGCCCAACCTCCCACCCGTGACTATTGTACCTTGTTGCTTCGGCGGGCCCGCCAGCGTTGCTGGCCGCCGGGGGGCGACTCGCCCCCGGGCCCGTGCCCGCCGGAGACCCCAACATGAACCCTGTTCTGAAAGCTTGCAGTCTGAGTTGTGATTCTTTGCAATCAGTTAAAACTTTCAACAATGGATCTCTTGGTTCCGGCATCGATGAAGAACGCAGCGAAATGCGATAACTAATGTGAATTGCAGAATTCAGTGAATCATCGAGTCTTTGAACGCACATTGCGCCCCCTGGTATTCCGGGGGGCATGCCTGTCCGAGCGTCATTGCTGCCCTCAAGCCCGGCTTGTGTGTTGGGCCCTCGTCCCCCGGCTCCCGGGGGACGGGCCCGAAAGGCAGCGGCGGCACCGCGTCCGGTCCTCGAGCGTATGGGGCTTCGTCTTCCGCTCCGTAGGCCCGGCCGGCGCCCGCCGACGCATT"
-
-
+# Que es la secuencia que se obtuvo o se tiene que analizar por lo que no sabemos aun si se integrara o no 
 analizar_nueva_secuencia(Nueva1)
+
+# se nos sa los datos de con quien sera mas cercana en el arbol
+
+
+
+
 
 
 
