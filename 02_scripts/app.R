@@ -74,7 +74,9 @@ ui <- fluidPage(
   )
 )
 
-
+#############################################################################
+#############             Interfaz de usuario básica            #############
+#############################################################################
 
 server <- function(input, output, session) {
   
@@ -117,6 +119,10 @@ server <- function(input, output, session) {
     )
     df
   })
+
+--------------------------------------------------------------------------------
+#                                          MSA
+--------------------------------------------------------------------------------
   
   # ReactiveValues para guardar alignment y objetos derivados
   rv <- reactiveValues(alignment = NULL, aln_seqinr = NULL, distmat = NULL, tree = NULL)
@@ -125,11 +131,21 @@ server <- function(input, output, session) {
     req(seqs())
     method <- input$method
     
-    # Ejecutar MSA dentro de un progress
+# Crea el cuadro para ejecutar el análisis con msa.
+# Función de Shiny withProgress:
+# La clase de referencia proporciona una API orientada a objetos.
+#
+# message: Un vector de caracteres de un solo elemento; el mensaje que se 
+# mostrará al usuario, o NULL para ocultar el mensaje actual (si lo hay).
+#
+# Link: https://shiny.posit.co/r/reference/shiny/1.0.1/withprogress.html
+#
     withProgress(message = paste("Ejecutando MSA con", method, "..."), value = 0, {
-      incProgress(0.1)
-      
-      # convertimos a un objeto compatible con msa (XStringSet)
+# Aumentas el progreso al 10%.
+            incProgress(0.1)
+# 
+# El objeto es un reactive() que lee las secuencias FASTA.
+#
       s <- seqs()
       
       # tryCatch para manejar errores si faltan ejecutables externos
@@ -227,6 +243,10 @@ server <- function(input, output, session) {
       write.fasta(sequences = seqs_list, names = names(seqs_list), file.out = file)
     }
   )
+
+#############################################################################
+#############             Interfaz de usuario básica            #############
+#############################################################################
   
 } # server
 
