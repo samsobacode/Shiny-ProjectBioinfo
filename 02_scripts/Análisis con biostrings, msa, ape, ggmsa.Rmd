@@ -2,6 +2,29 @@
 title: "Análisis con biostrings, msa, ape, ggmsa"
 output: html_document
 ---
+Objetivos general 
+Hacer uso de los paquetes utilizados en clase, proponiendo una función que facilite un analisis
+ 
+Objetivos específicos 
+1 Obtener secuencia ITS de Aspergillus
+2 Hacer análisis de la secuencia alineamientos pra construir un árbol
+3 Una función que al integrarle una secuencia la pueda integrar a lo ya presentado 
+
+Métodos
+Alineamiento múltiple de secuencias
+1. Se realizó un alineamiento múltiple usando el paquete msa en R. El alineamiento resultante fue convertido a formato compatible con los datos necesarios para árboles filogeneticos    
+2. Cálculo de distancias genéticas, Modelo K80 que es utilizado para hongos donde see estimaron distancias evolutivas entre pares de secuencias usando el modelo Kimura 2-Parameters
+3. Construcción del árbol filogenético este con NJ (Neighbor-Joining) para construir el árbol filogenético
+4. Hacer función con estos pasos anteriores además de la inclusión de la secuencia para determinar si es cercana a las secuencias qué tenemos entre otros análisis realizados
+ 
+Resultado
+1. Alineamiento múltiple
+   Se obtuvo un alineamiento consistente entre todas las secuencias ITS analizadas, permitiendo calcular distancias genéticas comparables bajo el modelo K80.
+2. Árbol filogenético
+   El análisis NJ generó un árbol filogenético que mostró la agrupación de las especies del género Aspergillus según su similitud molecular. Las secuencias se organizaron en clados coherentes con relaciones evolutivas previamente reportadas.
+3. Funcion integradora 
+  Se utilizaron los datos que se tenian para a una nueva secuencia alinearla y ver si esta esta relacionada
+
 
 library(Biostrings)   # Para manipulación de secuencias biológicas en este casos los Fasta Aspergillus 
 library(msa)          # Para alineamiento múltiple (MUSCLE)
