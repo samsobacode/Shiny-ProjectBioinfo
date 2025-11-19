@@ -1,6 +1,15 @@
-#############################################################################
-# app.R - Analizador bioinformático
-#############################################################################
+---
+title: "Analizador bioinformático Shiny"
+output: html_document
+---
+
+Script comentado de la app.R
+NOTA: No correr código.
+
+
+### Instalar paquetes requeridos para el análisis.
+
+```{r eval=FALSE, include=FALSE}
 
 if (!require("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
@@ -16,6 +25,11 @@ install.packages("shiny")
 install.packages("ape")
 install.packages("ggplot2")
 install.packages("seqinr")
+```
+
+### Instalar librerías.
+
+```{r eval=FALSE, include=FALSE}
 
 library(shiny)
 library(ggplot2)
@@ -27,14 +41,19 @@ library(ggmsa)
 library(ape)
 library(seqinr)
 library(ggplot2)
+```
 
-#############################################################################
-#                                UI
-#############################################################################
+###  Interfaz gráfica (UI).
+
+La estructura de shiny se baso en los dos primeros capítulo Mastering Shiny.
+
+Link: https://mastering-shiny.org/index.html
+
+```{r eval=FALSE, include=FALSE}
 
 ui <- fluidPage(
   titlePanel("Análisis bioinformático (FASTA → MSA → Árbol)"),
-  
+
   sidebarLayout(
     sidebarPanel(
       fileInput("archivo", "Sube archivo FASTA",
@@ -47,41 +66,50 @@ ui <- fluidPage(
       actionButton("runMSA", "Ejecutar MSA"),
       downloadButton("downloadAlignedFasta", "Descargar MSA (FASTA)")
     ),
-    
+
     mainPanel(
       tabsetPanel(
         tabPanel("Resumen",
                  verbatimTextOutput("tipoDetected"),
                  tableOutput("seqSummary")),
-        
+
         tabPanel("MSA (texto)",
                  verbatimTextOutput("msaText")),
-        
+
         tabPanel("Matriz de distancias",
                  tableOutput("distMatrix")),
-        
+
         tabPanel("Árbol filogenético",
                  plotOutput("treePlot", height = "600px"))
       )
     )
   )
 )
+```
 
-#############################################################################
-#                                SERVER
-#############################################################################
+### Server (interfaz de usuario básica).
+
+```{r eval=FALSE, include=FALSE}
 
 server <- function(input, output, session) {
-  
-###########################################################################
-#           Lectura FASTA (DNA o RNA)
-###########################################################################
-  
+```
+
+### Lectura FASTA (DNA o RNA).
+
+Leer múltiples archivos FASTA de secuencias ITS  que son los fragmentos que se utilizan para la identificación o clasificación de hongos.
+
+```{r eval=FALSE, include=FALSE}
+
   seqs <- reactive({
     req(input$archivo)
     path <- input$archivo$datapath
-    
-    tryDNA <- try(readDNAStringSet(path), silent = TRUE)
+```
+
+### Leer DNA, si detecta U de uracilo, convertir a RNA.
+
+```{r eval=FALSE, include=FALSE}
+
+ tryDNA <- try(readDNAStringSet(path), silent = TRUE)
     
     if(!inherits(tryDNA, "try-error")) {
       merged <- paste(as.character(unlist(tryDNA)), collapse = "")
@@ -92,8 +120,13 @@ server <- function(input, output, session) {
         return(tryDNA)                   # Es DNA
       }
     }
-    
-    tryRNA <- try(readRNAStringSet(path), silent = TRUE)
+```
+
+### Al no detectar DNA, pasa a leer el RNA.
+
+```{r eval=FALSE, include=FALSE}
+
+ tryRNA <- try(readRNAStringSet(path), silent = TRUE)
     if(!inherits(tryRNA, "try-error"))
       return(tryRNA)
     
@@ -114,30 +147,57 @@ server <- function(input, output, session) {
       stringsAsFactors = FALSE
     )
   })
-  
-###########################################################################
-#              MSA, distancias, árbol
-###########################################################################
-  
-  rv <- reactiveValues(
+```
+
+### MSA, distancias, árbol
+
+- Crea el cuadro para ejecutar el análisis con msa.
+- Función de Shiny withProgress: La clase de referencia proporciona una API orientada a objetos.
+- message: Un vector de caracteres de un solo elemento; el mensaje que se mostrará al usuario, o NULL para ocultar el mensaje actual (si lo hay).
+
+Link: https://shiny.posit.co/r/reference/shiny/1.0.1/withprogress.html
+
+```{r}
+rv <- reactiveValues(
     alignment = NULL,
     aln_seqinr = NULL,
     distmat = NULL,
     tree = NULL
   )
-  
-###########################################################################
-#               Ejecutar MSA
-###########################################################################
-  
-  observeEvent(input$runMSA, {
+```
+
+###  Ejecutar MSA
+
+- Aumentas el progreso al 10%, u otro. Esto con incProgress(0.1).
+
+Link: https://rstudio-pubs-static.s3.amazonaws.com/28353_bf4353b1c63f40f08082d4f91009edef.html
+
+- El objeto es un reactive() que contiene las secuencias FASTA.
+
+Link: https://rdrr.io/bioc/Biostrings/man/XStringSet-io.html
+
+```{r eval=FALSE, include=FALSE}
+
+observeEvent(input$runMSA, {
     req(seqs())
     method <- input$method
     
     withProgress(message = paste("Ejecutando MSA con", method), value = 0, {
       incProgress(0.1)
-      
-      s <- seqs()
+```
+
+- Alineamiento de secuencias múltiple mediante el método ClustalW,ClustalOmega y MUSCLE, con el paquete msa.
+
+- El if ayuda para elegir el tipo de alineamiento a ecoger.
+
+- tryCatch evita errores en Shiny.
+
+Link: https://stackoverflow.com/questions/30038676/r-trycatch-in-place-with-err-and-warn-handlers-but-shiny-still-crashes   
+
+
+```{r eval=FALSE, include=FALSE}
+
+s <- seqs()
       
       alignment <- tryCatch({
         switch(method,
@@ -154,6 +214,7 @@ server <- function(input, output, session) {
       
       incProgress(0.5)
       
+      # Convertir MSA a formato seqinr
       rv$aln_seqinr <- tryCatch({
         msaConvert(alignment, type = "seqinr::alignment")
       }, error = function(e){
@@ -163,16 +224,31 @@ server <- function(input, output, session) {
       
       incProgress(0.75)
       
+      # Matriz de distancias
       if(!is.null(rv$aln_seqinr)) {
         d <- tryCatch({
           dist.alignment(rv$aln_seqinr, "identity")
         }, error=function(e){
-          showNotification("Error en dist.alignment()", "error")
+```
+
+- El showNotification() muestra NULL, si hay un error.
+
+Link: https://shiny.posit.co/r/reference/shiny/0.14/shownotification.html
+
+```{r eval=FALSE, include=FALSE}
+
+showNotification("Error en dist.alignment()", "error")
           return(NULL)
         })
+```
+
+El if ayuda para retornar, si no hay alineamiento. Ayuda de ChatGTP, porque salia problemas de error en esta parte.
+
+```{r eval=FALSE, include=FALSE}
+
+rv$distmat <- as.matrix(d)
         
-        rv$distmat <- as.matrix(d)
-        
+        # Árbol NJ
         rv$tree <- tryCatch({
           nj(rv$distmat)
         }, error=function(e){
@@ -184,12 +260,12 @@ server <- function(input, output, session) {
       incProgress(1)
     })
   })
-  
-###########################################################################
-#                       Mostrar MSA en texto
-###########################################################################
-  
-  output$msaText <- renderPrint({
+```
+    
+###  Mostrar MSA en texto
+
+```{r eval=FALSE, include=FALSE}
+output$msaText <- renderPrint({
     req(rv$alignment)
     
     if(input$showConsensus){
@@ -198,30 +274,33 @@ server <- function(input, output, session) {
       print(rv$alignment, show="alignment", showConsensus=FALSE)
     }
   })
+```
+
+### Matriz de distancias
   
-###########################################################################
-#                        Matriz de distancias
-###########################################################################
-  
-  output$distMatrix <- renderTable({
+```{r}
+output$distMatrix <- renderTable({
     req(rv$distmat)
     round(rv$distmat, 4)
   }, rownames = TRUE)
+```
+
+### Árbol filogenético
   
-###########################################################################
-#                        Árbol filogenético
-###########################################################################
-  
-  output$treePlot <- renderPlot({
+```{r}
+output$treePlot <- renderPlot({
     req(rv$tree)
     plot(rv$tree, main = paste("Árbol NJ -", input$method))
   })
-  
-###########################################################################
-#                     Descargar MSA en FASTA
-###########################################################################
-  
-  output$downloadAlignedFasta <- downloadHandler(
+```
+
+### Descargar MSA en FASTA
+
+Solicitó ayuda al chat para poder hacer este botón de descarga.
+
+```{r eval=FALSE, include=FALSE}
+
+output$downloadAlignedFasta <- downloadHandler(
     filename = function() {
       paste0(tools::file_path_sans_ext(input$archivo$name), "_aligned.fasta")
     },
@@ -236,9 +315,14 @@ server <- function(input, output, session) {
     }
   )
 }
+```
 
-#############################################################################
-#                              LAUNCH APP
-#############################################################################
+# LAUNCH APP
+
+Estructura de Shiny.
+
+```{r eval=FALSE, include=FALSE}
 
 shinyApp(ui, server)
+```
+
