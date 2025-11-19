@@ -2,21 +2,26 @@
 title: "Análisis con biostrings, msa, ape, ggmsa"
 output: html_document
 ---
+
 library(Biostrings)   # Para manipulación de secuencias biológicas en este casos los Fasta Aspergillus 
 library(msa)          # Para alineamiento múltiple (MUSCLE)
 library(ape)          # Para análisis filogenético y construcción de árboles
 library(ggmsa)        # Para visualización del alineamiento
+
 #se descargarons archivos FASTA de regiones ITS Aspergillus hubkae, Aspergillus dhakepphalkarii, Aspergillus alvaroi, 
 # Aspergillus doliiformis, Aspergillus Cylundricus, Aspergillus pseudoalabamensis, Aspergillus marneyi que es la secuencia nueva a probar
 # Leer múltiples archivos FASTA de secuencias ITS  que son los fragments que se utilizan para la identificacion o clasificacion de hongos y combinarlos
+
 archivos <- list.files(pattern = "^sequence.*\\.fasta$") # Busque todos los archivos que encuentre con terminacion fasta
 secuencias_lista <- lapply(archivos, readDNAStringSet) # leer los archivos y juntarlos en una sola
 todas_secuencias <- do.call(c, secuencias_lista) # que te de las secuencias como cada una individual
+
 # Asignar nombres basados en el nombre de archivo que se tenia como tal al descargarlos
 names(todas_secuencias) <- sub("\\.fasta$", "", archivos)
 
 # Alinear las secuencias combinadas usando MUSCLE
 alineamiento <- msa(todas_secuencias, method = "Muscle")
+
 # se ven todas las secuencias se alinea con respecto a las reciones consevadas y mutaciones, asi como las deleciones o inserciones
 # Como se tiene ya un alineamiento se pasa a convertir  a formato compatible con ape (seqinr)
 aline_seqinr <- msaConvert(alineamiento, type = "seqinr::alignment") 
@@ -77,6 +82,7 @@ analizar_nueva_secuencia <- function(nueva_secuencia) {
 # Ejemplo de uso de la función esta vez con una secuencia de marneyi
 
 Nueva1 <- "AACGACCCCCCAGAGCCGGAAAGTTGGTCAAACCCGGTCATTTAGAGGAAGTAAAAGTCGTAACAAGGTTTCCGTAGGTGAACCTGCGGAAGGATCATTACCGAGTGCGGGTCTTTATGGCCCAACCTCCCACCCGTGACTATTGTACCTTGTTGCTTCGGCGGGCCCGCCAGCGTTGCTGGCCGCCGGGGGGCGACTCGCCCCCGGGCCCGTGCCCGCCGGAGACCCCAACATGAACCCTGTTCTGAAAGCTTGCAGTCTGAGTTGTGATTCTTTGCAATCAGTTAAAACTTTCAACAATGGATCTCTTGGTTCCGGCATCGATGAAGAACGCAGCGAAATGCGATAACTAATGTGAATTGCAGAATTCAGTGAATCATCGAGTCTTTGAACGCACATTGCGCCCCCTGGTATTCCGGGGGGCATGCCTGTCCGAGCGTCATTGCTGCCCTCAAGCCCGGCTTGTGTGTTGGGCCCTCGTCCCCCGGCTCCCGGGGGACGGGCCCGAAAGGCAGCGGCGGCACCGCGTCCGGTCCTCGAGCGTATGGGGCTTCGTCTTCCGCTCCGTAGGCCCGGCCGGCGCCCGCCGACGCATT"
+
 # Que es la secuencia que se obtuvo o se tiene que analizar por lo que no sabemos aun si se integrara o no 
 analizar_nueva_secuencia(Nueva1)
 
