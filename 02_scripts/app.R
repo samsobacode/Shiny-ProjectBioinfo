@@ -380,7 +380,7 @@ Nueva1 <- "AACGACCCCCCAGAGCCGGAAAGTTGGTCAAACCCGGTCATTTAGAGGAAGTAAAAGTCGTAACAAGGT
 # Que es la secuencia que se obtuvo o se tiene que analizar por lo que no sabemos aun si se integrara o no 
 analizar_nueva_secuencia(Nueva1)
 
-# se nos sa los datos de con quien sera mas cercana en el arbol
+# se nos da los datos de con quien sera mas cercana en el arbol
 
 
 
