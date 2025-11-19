@@ -5,12 +5,15 @@ if (!require("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
 BiocManager::install(version = "3.22")
 
-BiocManager::install(c("Biostrings","msa","ggmsa","XVector","IRanges","S4Vectors","BiocGenerics"))
-BiocManager::install("Biostrings")
+BiocManager::install(c("GenomeInfoDb", "Rhtslib"), force = TRUE)
+BiocManager::install("Biostrings", force = TRUE)
+BiocManager::install("msa", force = TRUE)
+BiocManager::install("ggmsa", force = TRUE)
 
-install.packages(c("shiny","ape","ggplot2"))
+install.packages("shiny")
+install.packages("ape")
+install.packages("ggplot2")
 install.packages("seqinr")
-
 
 # Instala dependencias fuera de la app antes de ejecutarla (ver sección "Instalación" abajo).
 
